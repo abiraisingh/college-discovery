@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -28,8 +30,16 @@ export function SavedCollegeManager({ saved }: SavedCollegeManagerProps) {
   const [items, setItems] = useState(saved);
   const [removing, setRemoving] = useState<string | null>(null);
   const toast = useToast();
+  const { status } = useSession();
+  const router = useRouter();
 
   async function handleRemove(collegeId: string) {
+    if (status !== 'authenticated') {
+      toast.notify('Please sign in to manage saved colleges.');
+      router.push('/auth/signin');
+      return;
+    }
+
     setRemoving(collegeId);
     const response = await fetch(`/api/saved?collegeId=${collegeId}`, { method: 'DELETE' });
 

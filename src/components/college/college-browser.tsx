@@ -1,6 +1,9 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/useToast';
 import useSWR from 'swr';
 import { apiFetcher } from '@/api/client';
 import { CollegeCard } from './college-card';
@@ -43,6 +46,9 @@ export function CollegeBrowser() {
   const [filters, setFilters] = useState(initialFilters);
   const debouncedFilters = useDebouncedValue(filters, 400);
   const [savedIds, setSavedIds] = useLocalStorage<string[]>('saved-colleges', []);
+  const { status } = useSession();
+  const router = useRouter();
+  const toast = useToast();
 
   const queryString = useMemo(() => buildQuery(debouncedFilters), [debouncedFilters]);
   const { data, error, isLoading, mutate } = useSWR<CollegesResponse>(
@@ -54,16 +60,34 @@ export function CollegeBrowser() {
 
   const handleSave = useCallback(
     async (college: CollegeSummary) => {
+      if (status !== 'authenticated') {
+        toast.notify('Please sign in to save colleges.');
+        router.push('/auth/signin');
+        return;
+      }
+
       if (savedIds.includes(college.id)) {
         setSavedIds(savedIds.filter((id) => id !== college.id));
+        await fetch(`/api/saved?collegeId=${college.id}`, { method: 'DELETE' });
         return;
       }
 
       setSavedIds([...savedIds, college.id]);
-      await fetch('/api/saved', {
+      const res = await fetch('/api/saved', {
         method: 'POST',
         body: JSON.stringify({ collegeId: college.id })
       });
+
+      if (!res.ok) {
+        // revert local state on failure
+        setSavedIds(savedIds.filter((id) => id !== college.id));
+        if (res.status === 401) {
+          toast.notify('Please sign in to save colleges.');
+          router.push('/auth/signin');
+        } else {
+          toast.notify('Could not save college.');
+        }
+      }
     },
     [savedIds, setSavedIds]
   );

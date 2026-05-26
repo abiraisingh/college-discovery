@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { AuthMenu } from '@/components/ui/auth-menu';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const navLinks = [
   { href: '/colleges', label: 'Colleges' },
@@ -31,6 +32,7 @@ export function Navbar() {
             </Link>
           ))}
           <div className="h-6 w-px bg-slate-200/50 dark:bg-slate-700/40" />
+          <ThemeToggle />
           <AuthMenu />
         </div>
 
@@ -66,7 +68,10 @@ export function Navbar() {
             ))}
           </div>
           <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-            <AuthMenu />
+            <div className="flex items-center justify-between">
+              <ThemeToggle />
+              <AuthMenu />
+            </div>
           </div>
         </div>
       ) : null}

@@ -39,7 +39,7 @@ export const authOptions: NextAuthOptions = {
 
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) {
-          return null;
+          throw new Error('Email and password are required');
         }
 
         const user = await prisma.user.findUnique({
@@ -49,16 +49,13 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.hashedPassword) {
-          return null;
+          throw new Error('No account found for that email. Please register first.');
         }
 
-        const isValid = await compare(
-          credentials.password,
-          user.hashedPassword
-        );
+        const isValid = await compare(credentials.password, user.hashedPassword);
 
         if (!isValid) {
-          return null;
+          throw new Error('Invalid email or password');
         }
 
         return {
